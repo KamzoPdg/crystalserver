@@ -57,25 +57,19 @@ local combatPhysicalWOD = Combat()
 combatPhysicalWOD:setParameter(COMBAT_PARAM_TYPE, COMBAT_PHYSICALDAMAGE)
 combatPhysicalWOD:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_WHITE_FLURRYOFBLOWS)
 combatPhysicalWOD:setArea(createCombatArea(AREA_WAVE_WOD))
-function onGetFormulaValuesPhysicalWOD(player, skill, weaponDamage, attackFactor)
-	return onGetFormulaValuesPhysical(player, skill, weaponDamage, attackFactor)
-end
+onGetFormulaValuesPhysicalWOD = loadstring(string.dump(onGetFormulaValues))
 combatPhysicalWOD:setCallback(CALLBACK_PARAM_SKILLVALUE, "onGetFormulaValuesPhysicalWOD")
 local combatEnergyWOD = Combat()
 combatEnergyWOD:setParameter(COMBAT_PARAM_TYPE, COMBAT_ENERGYDAMAGE)
 combatEnergyWOD:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_PINK_FLURRYOFBLOWS)
 combatEnergyWOD:setArea(createCombatArea(AREA_WAVE_WOD))
-function onGetFormulaValuesEnergyWOD(player, skill, weaponDamage, attackFactor)
-	return onGetFormulaValuesEnergy(player, skill, weaponDamage, attackFactor)
-end
+onGetFormulaValuesEnergyWOD = loadstring(string.dump(onGetFormulaValues))
 combatEnergyWOD:setCallback(CALLBACK_PARAM_SKILLVALUE, "onGetFormulaValuesEnergyWOD")
 local combatEarthWOD = Combat()
 combatEarthWOD:setParameter(COMBAT_PARAM_TYPE, COMBAT_EARTHDAMAGE)
 combatEarthWOD:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_GREEN_FLURRYOFBLOWS)
 combatEarthWOD:setArea(createCombatArea(AREA_WAVE_WOD))
-function onGetFormulaValuesEarthWOD(player, skill, weaponDamage, attackFactor)
-	return onGetFormulaValuesEarth(player, skill, weaponDamage, attackFactor)
-end
+onGetFormulaValuesEarthWOD = loadstring(string.dump(onGetFormulaValues))
 combatEarthWOD:setCallback(CALLBACK_PARAM_SKILLVALUE, "onGetFormulaValuesEarthWOD")
 local combatTypesWOD = {
 	["physical"] = combatPhysicalWOD,
