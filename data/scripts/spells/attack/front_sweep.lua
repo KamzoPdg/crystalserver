@@ -30,7 +30,7 @@ combatWOD:setParameter(COMBAT_PARAM_TYPE, COMBAT_PHYSICALDAMAGE)
 combatWOD:setParameter(COMBAT_PARAM_EFFECT, CONST_ME_HITAREA)
 combatWOD:setParameter(COMBAT_PARAM_BLOCKARMOR, 1)
 combatWOD:setParameter(COMBAT_PARAM_USECHARGES, 1)
-combatWOD:setArea(createCombatArea(AREA_WAVE7, AREADIAGONAL_WAVE7))
+combatWOD:setArea(createCombatArea(AREA_FRONT_SWEEP_WOD, AREADIAGONAL_FRONT_SWEEP_WOD))
 combatWOD:setCallback(CALLBACK_PARAM_SKILLVALUE, "onGetFormulaValuesWOD")
 
 local spell = Spell("instant")
