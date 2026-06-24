@@ -249,13 +249,14 @@ void LuaEnums::initOthersEnums(lua_State* L) {
 	registerEnum(L, BANNER_TYPE_PLAYERATTACKING);
 	registerEnum(L, BANNER_TYPE_TREASUREFOUND);
 	registerEnum(L, BANNER_TYPE_GIFTOFLIFE);
-
 	registerEnum(L, BANNER_TYPE_ATTACKSTOPPED);
 	registerEnum(L, BANNER_TYPE_CAPACITYLIMIT);
 	registerEnum(L, BANNER_TYPE_OUTOFAMMO);
 	registerEnum(L, BANNER_TYPE_TARGETTOOCLOSE);
 	registerEnum(L, BANNER_TYPE_OUTOFSOULPOINTS);
 	registerEnum(L, BANNER_TYPE_TUTORIALCOMPLETE);
+	registerEnum(L, BANNER_TYPE_WEEKLY_TASK_ANY_CREATURE);
+	registerEnum(L, BANNER_TYPE_PROMOTION_GRANTED);
 }
 
 void LuaEnums::initWorldTypeEnums(lua_State* L) {
