@@ -19,7 +19,7 @@ function echoPortal.onStepIn(creature, item, position, fromPosition)
 	end
 
 	local center = Position(position.x, position.y, position.z)
-	item:remove() -- consume immediately so it cannot be re-triggered
+	item:remove()
 	center:sendMagicEffect(CONST_ME_AGONY)
 
 	EchoWarden.runRaid(kind, center)

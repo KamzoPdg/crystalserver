@@ -54,7 +54,7 @@ function echoWardenTrigger.onDeath(creature, corpse, killer, mostDamageKiller, l
 		return true
 	end
 
-	-- echo-raid-spawned creatures (regular / influenced / trickle adds) never re-trigger.
+	-- echo-raid-spawned creatures (warden + minions) never re-trigger.
 	if creature:getStorageValue(EchoWarden.STORAGE_IS_SPAWNED) == 1 then
 		return true
 	end
@@ -76,7 +76,7 @@ function echoWardenTrigger.onDeath(creature, corpse, killer, mostDamageKiller, l
 		return true
 	end
 	local stars = mType:BestiaryStars() or 0
-	if stars < 1 or stars > 2 then -- common/uncommon only (registration already limits this)
+	if stars < 1 or stars > 2 then -- SOLO common/uncommon (1-2 estrellas) disparan Echo Raids (como Tibia RL)
 		return true
 	end
 
@@ -85,8 +85,6 @@ function echoWardenTrigger.onDeath(creature, corpse, killer, mostDamageKiller, l
 		return true
 	end
 
-	-- Capture name + death position NOW; the portal APPEARS 30s later (PORTAL_DELAY_MS),
-	-- not instantly. Tile validity is re-checked inside spawnPortal at appear-time.
 	local kindName = creature:getName()
 	local pos = creature:getPosition()
 	addEvent(EchoWarden.spawnPortal, EchoWarden.PORTAL_DELAY_MS, pos.x, pos.y, pos.z, kindName)
@@ -101,7 +99,7 @@ local echoWardenStartup = GlobalEvent("EchoWardenTriggerStartup")
 
 function echoWardenStartup.onStartup()
 	local count = 0
-	for stars = 1, 2 do -- common (1) + uncommon (2)
+	for stars = 1, 2 do -- SOLO common/uncommon (1-2 estrellas), como Tibia RL
 		local monsters = Game.getMonstersByBestiaryStars(stars)
 		if monsters then
 			for _, mType in ipairs(monsters) do
@@ -112,7 +110,7 @@ function echoWardenStartup.onStartup()
 			end
 		end
 	end
-	logger.info("[EchoWarden] Registered death trigger to {} common/uncommon monsters", count)
+	logger.info("[EchoWarden] Registered death trigger to {} monsters (common/uncommon 1-2)", count)
 	return true
 end
 
