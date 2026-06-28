@@ -11519,7 +11519,7 @@ void ProtocolGame::parseBossDifficultySelection(NetworkMessage &msg) {
 	if (oldProtocol || !player) {
 		return;
 	}
-	
+
 	const uint32_t selectionContext = msg.canRead(4) ? msg.get<uint32_t>() : 0; // always 1 so far
 	(void)selectionContext;
 	const uint8_t action = msg.canRead(1) ? msg.getByte() : 0xFF;
