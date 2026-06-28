@@ -12986,6 +12986,12 @@ void Player::sendWeaponProficiencyInfo(const uint16_t itemId) const {
 	}
 }
 
+void Player::sendBossDifficultySelection(uint8_t selectedDifficulty, const std::vector<uint32_t> &numbers, const std::vector<std::string> &banners, const std::vector<std::string> &redMods, const std::vector<std::string> &greenMods) const {
+	if (client) {
+		client->sendBossDifficultySelection(selectedDifficulty, numbers, banners, redMods, greenMods);
+	}
+}
+
 void Player::sendWeaponProficiencyReshapeOffers(const uint16_t itemId) const {
 	if (client) {
 		client->sendWeaponProficiencyReshapeOffers(itemId);

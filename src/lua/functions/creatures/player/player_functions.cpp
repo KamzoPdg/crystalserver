@@ -512,6 +512,7 @@ void PlayerFunctions::init(lua_State* L) {
 	Lua::registerMethod(L, "Player", "applyImbuementScrollToItem", PlayerFunctions::luaPlayerApplyImbuementScrollToItem);
 	Lua::registerMethod(L, "Player", "onClearAllImbuementsOnEtcher", PlayerFunctions::luaPlayerOnClearAllImbuementsOnEtcher);
 	Lua::registerMethod(L, "Player", "sendWeaponProficiencyExperience", PlayerFunctions::luaPlayerSendWeaponProficiencyExperience);
+	Lua::registerMethod(L, "Player", "sendBossDifficultySelection", PlayerFunctions::luaPlayerSendBossDifficultySelection);
 
 	// OTCR Features
 	Lua::registerMethod(L, "Player", "getMapShader", PlayerFunctions::luaPlayerGetMapShader);
@@ -5792,6 +5793,60 @@ int PlayerFunctions::luaPlayerSendWeaponProficiencyExperience(lua_State* L) {
 	const uint32_t addProficiencyExperience = Lua::getNumber<uint32_t>(L, 3, 0);
 
 	player->sendWeaponProficiencyExperience(itemId, addProficiencyExperience);
+	Lua::pushBoolean(L, true);
+	return 1;
+}
+
+int PlayerFunctions::luaPlayerSendBossDifficultySelection(lua_State* L) {
+	// player:sendBossDifficultySelection(selectedDifficulty, numbers{}, banners{}, redMods{}, greenMods{})
+	const auto &player = Lua::getUserdataShared<Player>(L, 1);
+	if (!player) {
+		Lua::reportErrorFunc(Lua::getErrorDesc(LUA_ERROR_PLAYER_NOT_FOUND));
+		Lua::pushBoolean(L, false);
+		return 1;
+	}
+
+	const uint8_t selectedDifficulty = Lua::getNumber<uint8_t>(L, 2, 0);
+
+	auto readNumbers = [L](int idx, std::vector<uint32_t> &out) {
+		if (!lua_istable(L, idx)) {
+			return;
+		}
+		for (int i = 1;; ++i) {
+			lua_rawgeti(L, idx, i);
+			if (lua_isnil(L, -1)) {
+				lua_pop(L, 1);
+				break;
+			}
+			out.push_back(Lua::getNumber<uint32_t>(L, -1, 0));
+			lua_pop(L, 1);
+		}
+	};
+	auto readStrings = [L](int idx, std::vector<std::string> &out) {
+		if (!lua_istable(L, idx)) {
+			return;
+		}
+		for (int i = 1;; ++i) {
+			lua_rawgeti(L, idx, i);
+			if (lua_isnil(L, -1)) {
+				lua_pop(L, 1);
+				break;
+			}
+			out.push_back(Lua::getString(L, -1, ""));
+			lua_pop(L, 1);
+		}
+	};
+
+	std::vector<uint32_t> numbers;
+	std::vector<std::string> banners;
+	std::vector<std::string> redMods;
+	std::vector<std::string> greenMods;
+	readNumbers(3, numbers);
+	readStrings(4, banners);
+	readStrings(5, redMods);
+	readStrings(6, greenMods);
+
+	player->sendBossDifficultySelection(selectedDifficulty, numbers, banners, redMods, greenMods);
 	Lua::pushBoolean(L, true);
 	return 1;
 }

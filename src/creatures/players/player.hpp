@@ -1151,6 +1151,7 @@ public:
 	// and on success fires an element-typed homing missile at the target.
 	void tryProcWeaponProficiencyHomingMissile(const std::shared_ptr<Creature> &target);
 	void sendWeaponProficiencyInfo(const uint16_t itemId) const;
+	void sendBossDifficultySelection(uint8_t selectedDifficulty, const std::vector<uint32_t> &numbers, const std::vector<std::string> &banners, const std::vector<std::string> &redMods, const std::vector<std::string> &greenMods) const;
 	void resetAllWeaponProficiencyPerks(const uint16_t itemId);
 	void applyEquippedWeaponProficiency(const uint16_t itemId);
 	void removeEquippedWeaponProficiency(const uint16_t itemId);

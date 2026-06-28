@@ -1438,6 +1438,9 @@ void ProtocolGame::parsePacketFromDispatcher(NetworkMessage &msg, uint8_t recvby
 		case 0xB3:
 			parseWeaponProficiency(msg);
 			break;
+		case 0xC2:
+			parseBossDifficultySelection(msg);
+			break;
 		case 0xBA:
 			parseSoulSeals(msg);
 			break;
@@ -11475,6 +11478,78 @@ void ProtocolGame::sendWeaponProficiencyReshapeOffers(const uint16_t itemId) {
 	}
 
 	writeToOutputBuffer(msg);
+}
+
+void ProtocolGame::sendBossDifficultySelection(uint8_t selectedDifficulty, const std::vector<uint32_t> &numbers, const std::vector<std::string> &banners, const std::vector<std::string> &redMods, const std::vector<std::string> &greenMods) {
+	if (oldProtocol || !player) {
+		return;
+	}
+
+	NetworkMessage msg;
+	msg.addByte(0x2F);
+	msg.addByte(selectedDifficulty);
+
+	msg.add<uint32_t>(numbers.size() > 0 ? numbers[0] : 0); // f1
+	msg.addByte(numbers.size() > 1 ? static_cast<uint8_t>(numbers[1]) : 0); // f2 (u8)
+	msg.add<uint16_t>(numbers.size() > 2 ? static_cast<uint16_t>(numbers[2]) : 0); // f3 = raceId
+	msg.add<uint16_t>(numbers.size() > 3 ? static_cast<uint16_t>(numbers[3]) : 0); // f4
+	msg.add<uint16_t>(numbers.size() > 4 ? static_cast<uint16_t>(numbers[4]) : 0); // f5 = Highest in Group
+	msg.add<uint16_t>(numbers.size() > 5 ? static_cast<uint16_t>(numbers[5]) : 0); // f6 = Personal Highest
+	msg.add<uint32_t>(numbers.size() > 6 ? numbers[6] : 0); // f7 = Bad Luck % (value/1000)
+
+	for (size_t i = 0; i < 5; ++i) {
+		msg.addString(i < banners.size() ? banners[i] : std::string());
+	}
+
+	msg.add<uint16_t>(0); // Update.f1
+	msg.addByte(static_cast<uint8_t>(redMods.size()));
+	for (const auto &s : redMods) {
+		msg.addString(s);
+	}
+	msg.addByte(static_cast<uint8_t>(greenMods.size()));
+	for (const auto &s : greenMods) {
+		msg.addString(s);
+	}
+
+	g_logger().info("[BossDiffSel] 0x2F sel={} raceId(f3)={} banners={}", selectedDifficulty, numbers.size() > 2 ? numbers[2] : 0, banners.size());
+	writeToOutputBuffer(msg);
+}
+
+void ProtocolGame::parseBossDifficultySelection(NetworkMessage &msg) {
+	if (oldProtocol || !player) {
+		return;
+	}
+	
+	const uint32_t selectionContext = msg.canRead(4) ? msg.get<uint32_t>() : 0; // always 1 so far
+	(void)selectionContext;
+	const uint8_t action = msg.canRead(1) ? msg.getByte() : 0xFF;
+	uint16_t difficulty = 0;
+	if ((action == 0x00 || action == 0x02) && msg.canRead(2)) {
+		difficulty = msg.get<uint16_t>();
+	}
+	while (msg.canRead(1)) { // drain trailing byte(s)
+		msg.getByte();
+	}
+
+	if (action == 0x02) {
+		// spinner preview — the window stays open, nothing to do server-side (selection is client-side)
+		g_logger().info("[BossDiffSel] select difficulty={}", difficulty);
+		return;
+	}
+	if (action == 0x00) {
+		// Start Fight — difficulty range is 0..25. Clamp/validate, then fire the callback.
+		if (difficulty > 25) {
+			difficulty = 25;
+		}
+		g_logger().info("[BossDiffSel] START FIGHT difficulty={} (0..25)", difficulty);
+	} else {
+		g_logger().info("[BossDiffSel] cancel/other action={}", action);
+	}
+	// Start (after handling) or Cancel -> close the dialog
+	NetworkMessage out;
+	out.addByte(0x2F);
+	out.addByte(0x01); // discriminator 1 = CLOSE
+	writeToOutputBuffer(out);
 }
 
 void ProtocolGame::parseExivaRestrictions(NetworkMessage &msg) {

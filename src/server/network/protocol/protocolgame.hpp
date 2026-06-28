@@ -571,6 +571,8 @@ private:
 	void sendWeaponProficiencyExperience(const uint16_t itemId, const uint32_t experience);
 	void sendWeaponProficiencyInfo(const uint16_t itemId);
 	void sendWeaponProficiencyReshapeOffers(const uint16_t itemId);
+	void sendBossDifficultySelection(uint8_t selectedDifficulty, const std::vector<uint32_t> &numbers, const std::vector<std::string> &banners, const std::vector<std::string> &redMods, const std::vector<std::string> &greenMods);
+	void parseBossDifficultySelection(NetworkMessage &msg);
 
 	friend class Player;
 	friend class PlayerWheel;
