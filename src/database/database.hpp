@@ -74,6 +74,27 @@ public:
 
 	uint64_t getLastInsertId();
 
+	/**
+	 * @brief Atomically executes an INSERT and returns the generated id in the same connection round-trip.
+	 *
+	 * Why this exists: with a connection pool, calling executeQuery() and then getLastInsertId()
+	 * is NOT safe, because the second call may acquire a different connection from the pool
+	 * (round-robin) and return that connection's LAST_INSERT_ID() — which is either 0 or, worse,
+	 * the id of an unrelated INSERT that another thread happened to run on that connection.
+	 *
+	 * This method solves the problem by executing "INSERT ... ; SELECT LAST_INSERT_ID() AS id"
+	 * in a single storeQuery() call, guaranteeing that the SELECT runs on the SAME connection
+	 * as the INSERT. The connection is acquired once, both statements execute on that pinned
+	 * connection, and the result is read before the connection is released to the pool.
+	 *
+	 * @return The generated id on success, or 0 on failure (caller must check).
+	 *
+	 * @note This MUST be used instead of executeQuery() + getLastInsertId() for any INSERT
+	 * whose auto-increment id is consumed downstream (account/player creation, guild creation,
+	 * market offers, house bids, statements, etc.).
+	 */
+	uint64_t insertAndGetId(std::string_view query);
+
 	static const char* getClientVersion() {
 		return mysql_get_client_info();
 	}

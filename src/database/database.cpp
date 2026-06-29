@@ -419,14 +419,53 @@ std::string Database::escapeBlob(const char* s, uint32_t length) {
 }
 
 uint64_t Database::getLastInsertId() {
-	DBConnection* conn = getConnection();
+	DBConnection* conn = tls_pinnedConnection;
+	bool borrowed = false;
+	if (!conn) {
+		conn = getConnection();
+		borrowed = true;
+	}
 	if (!conn) {
 		return 0;
 	}
 
 	uint64_t id = static_cast<uint64_t>(mysql_insert_id(conn->handle));
-	putConnection(conn);
+	if (id == 0) {
+		g_logger().warn("[Database::getLastInsertId] LAST_INSERT_ID is 0 — caller likely ran INSERT on a different connection than this one. Use insertAndGetId() to be safe.");
+	}
+	if (borrowed) {
+		putConnection(conn);
+	}
 	return id;
+}
+
+uint64_t Database::insertAndGetId(std::string_view query) {
+	if (query.empty()) {
+		return 0;
+	}
+
+	DBConnection* conn = getConnection();
+	if (!conn) {
+		return 0;
+	}
+
+	uint64_t insertedId = 0;
+
+	// Run the INSERT first (using the existing execute path for retry/error handling).
+	metrics::query_latency measure(query.substr(0, 50));
+	if (!retryQuery(conn->handle, query, 10)) {
+		measure.stop();
+		putConnection(conn);
+		return 0;
+	}
+	mysql_free_result(mysql_store_result(conn->handle));
+
+	// Same connection, same session — mysql_insert_id() is reliable here.
+	insertedId = static_cast<uint64_t>(mysql_insert_id(conn->handle));
+	measure.stop();
+
+	putConnection(conn);
+	return insertedId;
 }
 
 DBResult::DBResult(MYSQL_RES* res) {
