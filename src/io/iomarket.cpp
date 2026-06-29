@@ -40,7 +40,6 @@ MarketOfferList IOMarket::getActiveOffers(MarketAction_t action) {
 	MarketOfferList offerList;
 
 	// Market client limit to prevent client debug
-	static constexpr uint32_t MAX_MARKET_OFFERS_RETURNED = 1500;
 
 	std::string query = fmt::format(
 		"SELECT `id`, `itemtype`, `amount`, `price`, `tier`, `created`, `anonymous`, "
@@ -80,7 +79,6 @@ MarketOfferList IOMarket::getActiveOffers(MarketAction_t action, uint16_t itemId
 	MarketOfferList offerList;
 
 	// Market client limit to prevent client debug
-	static constexpr uint32_t MAX_MARKET_OFFERS_PER_SIDE = 700;
 
 	std::ostringstream query;
 	query << "SELECT `id`, `amount`, `price`, `tier`, `created`, `anonymous`, (SELECT `name` FROM `players` WHERE `id` = `player_id`) AS `player_name` FROM `market_offers` WHERE `sale` = " << action << " AND `itemtype` = " << itemId << " AND `tier` = " << std::to_string(tier) << " ORDER BY `id` DESC LIMIT " << MAX_MARKET_OFFERS_PER_SIDE;
@@ -114,7 +112,6 @@ MarketOfferList IOMarket::getOwnOffers(MarketAction_t action, uint32_t playerId)
 	MarketOfferList offerList;
 
 	// Market client limit to prevent client debug
-	static constexpr uint32_t MAX_MARKET_OWN_OFFERS_PER_SIDE = 1000;
 	const int32_t marketOfferDuration = g_configManager().getNumber(MARKET_OFFER_DURATION);
 
 	std::ostringstream query;
@@ -266,6 +263,28 @@ void IOMarket::checkExpiredOffers() {
 uint32_t IOMarket::getPlayerOfferCount(uint32_t playerId) {
 	std::ostringstream query;
 	query << "SELECT COUNT(*) AS `count` FROM `market_offers` WHERE `player_id` = " << playerId;
+
+	DBResult_ptr result = Database::getInstance().storeQuery(query.str());
+	if (!result) {
+		return 0;
+	}
+	return result->getNumber<int32_t>("count");
+}
+
+uint32_t IOMarket::getPlayerOfferCountPerSide(uint32_t playerId, MarketAction_t action) {
+	std::ostringstream query;
+	query << "SELECT COUNT(*) AS `count` FROM `market_offers` WHERE `player_id` = " << playerId << " AND `sale` = " << action;
+
+	DBResult_ptr result = Database::getInstance().storeQuery(query.str());
+	if (!result) {
+		return 0;
+	}
+	return result->getNumber<int32_t>("count");
+}
+
+uint32_t IOMarket::getItemOfferCountPerSide(uint16_t itemId, uint8_t tier, MarketAction_t action) {
+	std::ostringstream query;
+	query << "SELECT COUNT(*) AS `count` FROM `market_offers` WHERE `itemtype` = " << itemId << " AND `tier` = " << std::to_string(tier) << " AND `sale` = " << action;
 
 	DBResult_ptr result = Database::getInstance().storeQuery(query.str());
 	if (!result) {
