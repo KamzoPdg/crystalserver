@@ -210,7 +210,7 @@ uint32_t SpawnMonster::getNextCheckDelay() const {
 	if (!any) {
 		return interval;
 	}
-	
+
 	return static_cast<uint32_t>(std::max<int64_t>(best, 1000));
 }
 

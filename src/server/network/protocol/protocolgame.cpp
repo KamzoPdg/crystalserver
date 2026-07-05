@@ -4118,7 +4118,7 @@ void ProtocolGame::parseCyclopediaMapAction(NetworkMessage &msg, uint8_t recvbyt
 	if (oldProtocol || !player) {
 		return;
 	}
-	
+
 	if (recvbyte == 0xDB) {
 		const uint8_t mapAction = msg.canRead(1) ? msg.getByte() : 0xFF;
 		if (mapAction == 1 && msg.canRead(6)) {
