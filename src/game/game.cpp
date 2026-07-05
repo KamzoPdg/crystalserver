@@ -6264,7 +6264,7 @@ void Game::playerFollowCreature(uint32_t playerId, uint32_t creatureId) {
 	player->setFollowCreature(getCreatureByID(creatureId));
 }
 
-void Game::playerSetFightModes(uint32_t playerId, FightMode_t fightMode, bool chaseMode, bool secureMode) {
+void Game::playerSetFightModes(uint32_t playerId, FightMode_t fightMode, bool chaseMode, bool secureMode, PvpMode_t pvpMode) {
 	const auto &player = getPlayerByID(playerId);
 	if (!player) {
 		return;
@@ -6273,6 +6273,7 @@ void Game::playerSetFightModes(uint32_t playerId, FightMode_t fightMode, bool ch
 	player->setFightMode(fightMode);
 	player->setChaseMode(chaseMode);
 	player->setSecureMode(secureMode);
+	player->setPvpMode(pvpMode);
 }
 
 void Game::playerRequestAddVip(uint32_t playerId, const std::string &name) {

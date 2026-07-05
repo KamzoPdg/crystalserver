@@ -23,6 +23,13 @@ function onCreateMagicWall(creature, position)
 	if item then
 		item:setDuration(16, 24)
 		item:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, string.format("Casted by: %s", creature:getName()))
+		-- Open PvP (2014 rules): ownership decides who the wall blocks and who walks through
+		item:setOwner(creature)
+		-- Cast outside a PvP situation -> PvE wall: blocks only monsters, every player
+		-- (including the caster) walks through it
+		if creature:isPlayer() and not creature:hasActivePvpSituation() then
+			item:setCustomAttribute("pveWall", true)
+		end
 	end
 end
 
