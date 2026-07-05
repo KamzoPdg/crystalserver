@@ -8508,6 +8508,7 @@ void Player::sendScreenshotAndBannerLeaderMonsterKilled(uint16_t raceId, uint32_
 	}
 }
 
+
 void Player::checkSpellUnlocksOnAdvance(uint32_t oldLevel, uint32_t newLevel, uint32_t oldMagLevel, uint32_t newMagLevel) const {
 	if (!client) {
 		return;
@@ -9567,6 +9568,10 @@ void Player::stowItem(const std::shared_ptr<Item> &item, uint32_t count, bool al
 	}
 
 	stashContainer(itemDict);
+
+	if (totalItemsToStow > 0) {
+		g_callbacks().executeCallback(EventCallback_t::playerOnStowItem, &EventCallback::playerOnStowItem, getPlayer(), item, totalItemsToStow);
+	}
 }
 
 void Player::sendPreyData() const {
