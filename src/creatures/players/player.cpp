@@ -8508,7 +8508,6 @@ void Player::sendScreenshotAndBannerLeaderMonsterKilled(uint16_t raceId, uint32_
 	}
 }
 
-
 void Player::checkSpellUnlocksOnAdvance(uint32_t oldLevel, uint32_t newLevel, uint32_t oldMagLevel, uint32_t newMagLevel) const {
 	if (!client) {
 		return;
