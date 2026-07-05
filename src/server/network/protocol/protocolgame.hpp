@@ -365,6 +365,15 @@ private:
 	void sendTutorial(uint8_t tutorialId);
 	void sendAddMarker(const Position &pos, uint8_t markType, const std::string &desc);
 
+	// Cyclopedia Map "Measuring Tibia" discovery — S2C 0xDD sub-types (RE'd from summer client).
+	void sendCyclopediaMapSetCurrentArea(uint16_t areaId);
+	void sendCyclopediaMapSetExploringArea(uint16_t subAreaId);
+	void sendCyclopediaMapDonations(uint64_t donationGoal, const std::vector<std::tuple<uint16_t, bool, uint64_t>> &areas);
+	void sendCyclopediaMapDiscoveryData(const std::vector<std::tuple<uint16_t, uint8_t, uint8_t>> &mainAreas, const std::vector<uint16_t> &discoveredSubAreas, const std::vector<uint16_t> &discoverableSubAreas);
+	void sendCyclopediaMapSetDiscoveryArea(uint16_t areaId, bool active, uint8_t poiTarget, const std::vector<std::pair<Position, uint8_t>> &points);
+	void parseCyclopediaMapAction(NetworkMessage &msg, uint8_t recvbyte); // C2S 0x92 + 0xDB (Map tab: requests / donations)
+	void handleDiscoveryDonation(uint16_t areaId, uint64_t amount);
+
 	void sendCyclopediaCharacterNoData(CyclopediaCharacterInfoType_t characterInfoType, uint8_t errorCode);
 	void sendCyclopediaCharacterBaseInformation();
 	void sendCyclopediaCharacterGeneralStats();

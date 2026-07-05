@@ -12992,6 +12992,61 @@ void Player::sendBossDifficultySelection(uint8_t selectedDifficulty, const std::
 	}
 }
 
+void Player::sendCyclopediaDiscoveryTest(uint16_t mainAreaId, uint16_t subAreaId, const Position &base) {
+	if (!client) {
+		return;
+	}
+	
+	client->sendCyclopediaMapDiscoveryData({ std::make_tuple(mainAreaId, static_cast<uint8_t>(1), static_cast<uint8_t>(14)) }, {}, { subAreaId });
+	client->sendCyclopediaMapSetCurrentArea(subAreaId);
+	static const int offsets[7][2] = { { 0, 0 }, { 2, 0 }, { -2, 0 }, { 0, 2 }, { 0, -2 }, { 3, 3 }, { -3, -3 } };
+	std::vector<std::pair<Position, uint8_t>> points;
+	points.reserve(7);
+	for (const auto &off : offsets) {
+		points.emplace_back(Position(static_cast<uint16_t>(base.x + off[0]), static_cast<uint16_t>(base.y + off[1]), base.z), static_cast<uint8_t>(0));
+	}
+	client->sendCyclopediaMapSetDiscoveryArea(subAreaId, true, 7, points);
+}
+
+void Player::sendCyclopediaMapDiscoveryData(const std::vector<std::tuple<uint16_t, uint8_t, uint8_t>> &mainAreas, const std::vector<uint16_t> &discoveredSubAreas, const std::vector<uint16_t> &discoverableSubAreas) {
+	discoveryMains = mainAreas;
+	discoveryDiscovered = discoveredSubAreas;
+	discoveryDiscoverable = discoverableSubAreas;
+	if (client) {
+		client->sendCyclopediaMapDiscoveryData(mainAreas, discoveredSubAreas, discoverableSubAreas);
+	}
+}
+
+void Player::resendCyclopediaMapDiscoveryData() const {
+	if (client && !discoveryMains.empty()) {
+		client->sendCyclopediaMapDiscoveryData(discoveryMains, discoveryDiscovered, discoveryDiscoverable);
+	}
+}
+
+void Player::sendCyclopediaMapSetCurrentArea(uint16_t subAreaId) const {
+	if (client) {
+		client->sendCyclopediaMapSetCurrentArea(subAreaId);
+	}
+}
+
+void Player::sendCyclopediaMapSetExploringArea(uint16_t subAreaId) const {
+	if (client) {
+		client->sendCyclopediaMapSetExploringArea(subAreaId);
+	}
+}
+
+void Player::sendCyclopediaMapDonations(uint64_t donationGoal, const std::vector<std::tuple<uint16_t, bool, uint64_t>> &areas) const {
+	if (client) {
+		client->sendCyclopediaMapDonations(donationGoal, areas);
+	}
+}
+
+void Player::sendCyclopediaMapSetDiscoveryArea(uint16_t subAreaId, bool active, uint8_t poiTarget, const std::vector<std::pair<Position, uint8_t>> &points) const {
+	if (client) {
+		client->sendCyclopediaMapSetDiscoveryArea(subAreaId, active, poiTarget, points);
+	}
+}
+
 void Player::sendWeaponProficiencyReshapeOffers(const uint16_t itemId) const {
 	if (client) {
 		client->sendWeaponProficiencyReshapeOffers(itemId);

@@ -1152,6 +1152,14 @@ public:
 	void tryProcWeaponProficiencyHomingMissile(const std::shared_ptr<Creature> &target);
 	void sendWeaponProficiencyInfo(const uint16_t itemId) const;
 	void sendBossDifficultySelection(uint8_t selectedDifficulty, const std::vector<uint32_t> &numbers, const std::vector<std::string> &banners, const std::vector<std::string> &redMods, const std::vector<std::string> &greenMods) const;
+	// Discovery System (Cyclopedia Map).
+	void sendCyclopediaDiscoveryTest(uint16_t mainAreaId, uint16_t subAreaId, const Position &base);
+	void sendCyclopediaMapDiscoveryData(const std::vector<std::tuple<uint16_t, uint8_t, uint8_t>> &mainAreas, const std::vector<uint16_t> &discoveredSubAreas, const std::vector<uint16_t> &discoverableSubAreas);
+	void resendCyclopediaMapDiscoveryData() const;
+	void sendCyclopediaMapSetCurrentArea(uint16_t subAreaId) const;
+	void sendCyclopediaMapSetExploringArea(uint16_t subAreaId) const;
+	void sendCyclopediaMapDonations(uint64_t donationGoal, const std::vector<std::tuple<uint16_t, bool, uint64_t>> &areas) const;
+	void sendCyclopediaMapSetDiscoveryArea(uint16_t subAreaId, bool active, uint8_t poiTarget, const std::vector<std::pair<Position, uint8_t>> &points) const;
 	void resetAllWeaponProficiencyPerks(const uint16_t itemId);
 	void applyEquippedWeaponProficiency(const uint16_t itemId);
 	void removeEquippedWeaponProficiency(const uint16_t itemId);
@@ -1794,6 +1802,11 @@ private:
 	void addBosstiaryKill(const std::shared_ptr<MonsterType> &mType);
 
 	phmap::flat_hash_set<uint32_t> attackedSet {};
+
+	// Discovery System: last DiscoveryData pushed by the Lua logic (answer for C2S 0x92 requests)
+	std::vector<std::tuple<uint16_t, uint8_t, uint8_t>> discoveryMains;
+	std::vector<uint16_t> discoveryDiscovered;
+	std::vector<uint16_t> discoveryDiscoverable;
 
 	std::map<uint8_t, OpenContainer> openContainers;
 	std::map<uint32_t, std::shared_ptr<DepotLocker>> depotLockerMap;

@@ -45,6 +45,7 @@
 #include "creatures/players/wheel/player_wheel.hpp"
 #include "enums/player_icons.hpp"
 #include "game/game.hpp"
+#include "kv/kv.hpp"
 #include "game/modal_window/modal_window.hpp"
 #include "game/scheduling/dispatcher.hpp"
 #include "game/scheduling/save_manager.hpp"
@@ -1349,7 +1350,7 @@ void ProtocolGame::parsePacketFromDispatcher(NetworkMessage &msg, uint8_t recvby
 			parseQuickLootBlackWhitelist(msg);
 			break;
 		case 0x92:
-			parseOpenDepotSearch();
+			parseCyclopediaMapAction(msg, recvbyte);
 			break;
 		case 0x93:
 			parseCloseDepotSearch();
@@ -1506,6 +1507,9 @@ void ProtocolGame::parsePacketFromDispatcher(NetworkMessage &msg, uint8_t recvby
 			break;
 		case 0xD7:
 			parseCloseImbuementWindow(msg);
+			break;
+		case 0xDB:
+			parseCyclopediaMapAction(msg, recvbyte);
 			break;
 		case 0xDC:
 			parseAddVip(msg);
@@ -4023,6 +4027,265 @@ void ProtocolGame::sendAddMarker(const Position &pos, uint8_t markType, const st
 	msg.addByte(markType);
 	msg.addString(desc);
 	writeToOutputBuffer(msg);
+}
+
+void ProtocolGame::sendCyclopediaMapSetCurrentArea(uint16_t areaId) {
+	if (!player || oldProtocol) {
+		return;
+	}
+	NetworkMessage msg;
+	msg.addByte(0xDD);
+	msg.addByte(enumToValue(CyclopediaMapData_t::SetCurrentArea));
+	msg.add<uint16_t>(areaId);
+	writeToOutputBuffer(msg);
+}
+
+void ProtocolGame::sendCyclopediaMapDiscoveryData(const std::vector<std::tuple<uint16_t, uint8_t, uint8_t>> &mainAreas, const std::vector<uint16_t> &discoveredSubAreas, const std::vector<uint16_t> &discoverableSubAreas) {
+	if (!player || oldProtocol) {
+		return;
+	}
+	// sub 1: u16 nMain {u16 areaId, u8 status(0-3), u8 progress(0-100,0xFF=undiscoverable)}; u16 nDiscovered {u16}; u16 nDiscoverable {u16}.
+	NetworkMessage msg;
+	msg.addByte(0xDD);
+	msg.addByte(enumToValue(CyclopediaMapData_t::DiscoveryData));
+	msg.add<uint16_t>(static_cast<uint16_t>(mainAreas.size()));
+	for (const auto &[areaId, status, progress] : mainAreas) {
+		msg.add<uint16_t>(areaId);
+		msg.addByte(status);
+		msg.addByte(progress);
+	}
+	msg.add<uint16_t>(static_cast<uint16_t>(discoveredSubAreas.size()));
+	for (const auto subAreaId : discoveredSubAreas) {
+		msg.add<uint16_t>(subAreaId);
+	}
+	msg.add<uint16_t>(static_cast<uint16_t>(discoverableSubAreas.size()));
+	for (const auto subAreaId : discoverableSubAreas) {
+		msg.add<uint16_t>(subAreaId);
+	}
+	writeToOutputBuffer(msg);
+}
+
+void ProtocolGame::sendCyclopediaMapSetExploringArea(uint16_t subAreaId) {
+	if (!player || oldProtocol) {
+		return;
+	}
+	// sub 11: u16 subarea id -> currentExploringSubAreaID (0 = none)
+	NetworkMessage msg;
+	msg.addByte(0xDD);
+	msg.addByte(enumToValue(CyclopediaMapData_t::SetExploringArea));
+	msg.add<uint16_t>(subAreaId);
+	writeToOutputBuffer(msg);
+}
+
+void ProtocolGame::sendCyclopediaMapDonations(uint64_t donationGoal, const std::vector<std::tuple<uint16_t, bool, uint64_t>> &areas) {
+	if (!player || oldProtocol) {
+		return;
+	}
+	// sub 9: u64 goal; u8 count; {u16 areaId, bool improvedRespawnActive, u64 donatedAmount}xN
+	NetworkMessage msg;
+	msg.addByte(0xDD);
+	msg.addByte(enumToValue(CyclopediaMapData_t::Donations));
+	msg.add<uint64_t>(donationGoal);
+	msg.addByte(static_cast<uint8_t>(areas.size()));
+	for (const auto &[areaId, improvedRespawn, donated] : areas) {
+		msg.add<uint16_t>(areaId);
+		msg.addByte(improvedRespawn ? 0x01 : 0x00);
+		msg.add<uint64_t>(donated);
+	}
+	writeToOutputBuffer(msg);
+}
+
+void ProtocolGame::sendCyclopediaMapSetDiscoveryArea(uint16_t areaId, bool active, uint8_t poiTarget, const std::vector<std::pair<Position, uint8_t>> &points) {
+	if (!player || oldProtocol) {
+		return;
+	}
+	// sub 5 ("Start Discovering" response): u16 areaId; bool active (reader+0x88!); u8 poiTarget(=7); u8 poiCount; {position(5B), u8 state}xN.
+	NetworkMessage msg;
+	msg.addByte(0xDD);
+	msg.addByte(enumToValue(CyclopediaMapData_t::SetDiscoveryArea));
+	msg.add<uint16_t>(areaId);
+	msg.addByte(active ? 0x01 : 0x00);
+	msg.addByte(poiTarget);
+	msg.addByte(static_cast<uint8_t>(points.size()));
+	for (const auto &[pos, state] : points) {
+		msg.addPosition(pos);
+		msg.addByte(state);
+	}
+	writeToOutputBuffer(msg);
+}
+
+void ProtocolGame::parseCyclopediaMapAction(NetworkMessage &msg, uint8_t recvbyte) {
+	if (oldProtocol || !player) {
+		return;
+	}
+	
+	if (recvbyte == 0xDB) {
+		const uint8_t mapAction = msg.canRead(1) ? msg.getByte() : 0xFF;
+		if (mapAction == 1 && msg.canRead(6)) {
+			// confirmed wire: u16 areaId, u32 amount, u8 trailing (ignored)
+			const uint16_t areaId = msg.get<uint16_t>();
+			const uint32_t amount = msg.get<uint32_t>();
+			g_logger().info("[CyclopediaMapAction] 0xDB donate: areaId {} amount {}", areaId, amount);
+			if (areaId > 0 && areaId < 1000 && amount > 0) {
+				handleDiscoveryDonation(areaId, amount);
+			}
+		} else if (mapAction != 2) {
+			std::string hex;
+			while (msg.canRead(1)) {
+				hex += fmt::format("{:02x} ", msg.getByte());
+			}
+			g_logger().info("[CyclopediaMapAction] 0xDB unknown action {}: [{}]", mapAction, hex);
+		}
+		// intentionally never replied to
+		return;
+	}
+
+	std::vector<uint8_t> body;
+	body.reserve(msg.getLength());
+	while (msg.canRead(1)) {
+		body.push_back(msg.getByte());
+	}
+	size_t p = 0;
+	auto readVarint = [&](uint64_t &value) -> bool {
+		value = 0;
+		int shift = 0;
+		while (p < body.size()) {
+			const uint8_t b = body[p++];
+			value |= static_cast<uint64_t>(b & 0x7F) << shift;
+			if (!(b & 0x80)) {
+				return true;
+			}
+			shift += 7;
+		}
+		return false;
+	};
+
+	std::map<uint32_t, uint64_t> top;
+	std::map<uint32_t, std::map<uint32_t, uint64_t>> nested;
+	std::string dump;
+	while (p < body.size()) {
+		uint64_t tag;
+		if (!readVarint(tag)) {
+			break;
+		}
+		const auto fn = static_cast<uint32_t>(tag >> 3);
+		const auto wt = static_cast<uint32_t>(tag & 7);
+		if (wt == 0) {
+			uint64_t v;
+			if (!readVarint(v)) {
+				break;
+			}
+			top[fn] = v;
+			dump += fmt::format("f{}={} ", fn, v);
+		} else if (wt == 2) {
+			uint64_t ln;
+			if (!readVarint(ln)) {
+				break;
+			}
+			const size_t end = std::min(body.size(), p + static_cast<size_t>(ln));
+			while (p < end) {
+				uint64_t tag2;
+				if (!readVarint(tag2)) {
+					break;
+				}
+				if ((tag2 & 7) != 0) {
+					break;
+				}
+				uint64_t v2;
+				if (!readVarint(v2)) {
+					break;
+				}
+				nested[fn][static_cast<uint32_t>(tag2 >> 3)] = v2;
+				dump += fmt::format("f{}.{}={} ", fn, tag2 >> 3, v2);
+			}
+			p = end;
+		} else {
+			break;
+		}
+	}
+	g_logger().debug("[CyclopediaMapAction] C2S 0x92: {}", dump.empty() ? "(empty)" : dump);
+
+	// legacy 0x92 donation encodings (top f5+f6 / {f1, f2} submessage)
+	uint64_t donArea = 0;
+	uint64_t donAmount = 0;
+	if (top.contains(5) && top.contains(6)) {
+		donArea = top[5];
+		donAmount = top[6];
+	} else {
+		for (const auto &[fn, inner] : nested) {
+			if (inner.contains(1) && inner.contains(2)) {
+				donArea = inner.at(1);
+				donAmount = inner.at(2);
+				break;
+			}
+		}
+	}
+	if (donArea > 0 && donArea < 1000 && donAmount > 0) {
+		handleDiscoveryDonation(static_cast<uint16_t>(donArea), donAmount);
+		return;
+	}
+
+	player->resendCyclopediaMapDiscoveryData();
+}
+
+void ProtocolGame::handleDiscoveryDonation(uint16_t areaId, uint64_t amount) {
+	static constexpr uint64_t MAX_SINGLE_DONATION = 1000000000000ULL;
+	if (!player || amount == 0 || amount > MAX_SINGLE_DONATION) {
+		return;
+	}
+	const auto store = g_kv().scoped("discovery-donations");
+	const auto goalVal = store->get("goal");
+	const auto goal = goalVal ? static_cast<uint64_t>(goalVal->getNumber()) : 10000000ULL;
+
+	if (!g_game().removeMoney(player, amount, 0, true)) {
+		player->sendTextMessage(MESSAGE_EVENT_ADVANCE, "You do not have that much money (including your bank balance).");
+		return;
+	}
+	// refresh the gold shown in the map UI right away (it reads the resource balance)
+	sendResourcesBalance(player->getMoney(), player->getBankBalance(), player->getPreyCards(), player->getTaskHuntingPoints(), player->getSoulsealsPoints());
+
+	const auto poolKey = fmt::format("area-{}", areaId);
+	const auto poolVal = store->get(poolKey);
+	const uint64_t oldPool = poolVal ? static_cast<uint64_t>(poolVal->getNumber()) : 0;
+	const uint64_t newPool = oldPool + amount;
+	store->set(poolKey, ValueWrapper(static_cast<double>(newPool)));
+	g_logger().debug("[Discovery] {} donated {} gold to area {} (pool {}/{})", player->getName(), amount, areaId, newPool, goal);
+
+	// rebuild sub 9 entries from every known pool/boost key and push to everyone online
+	const auto now = static_cast<uint64_t>(time(nullptr));
+	std::map<uint16_t, std::tuple<uint16_t, bool, uint64_t>> entryMap;
+	for (const auto &fullKey : store->keys()) {
+		const auto pos = fullKey.rfind("area-");
+		if (pos == std::string::npos) {
+			continue;
+		}
+		const int id = std::atoi(fullKey.c_str() + pos + 5);
+		if (id <= 0 || id >= 1000 || entryMap.contains(static_cast<uint16_t>(id))) {
+			continue;
+		}
+		const auto donatedVal = store->get(fmt::format("area-{}", id));
+		const auto untilVal = store->get(fmt::format("boost-until-{}", id));
+		const uint64_t donated = donatedVal ? static_cast<uint64_t>(donatedVal->getNumber()) : 0;
+		const bool active = untilVal && static_cast<uint64_t>(untilVal->getNumber()) > now;
+		entryMap.emplace(static_cast<uint16_t>(id), std::make_tuple(static_cast<uint16_t>(id), active, donated));
+	}
+	std::vector<std::tuple<uint16_t, bool, uint64_t>> entries;
+	entries.reserve(entryMap.size());
+	for (const auto &[id, entry] : entryMap) {
+		entries.push_back(entry);
+	}
+
+	const bool crossed = oldPool < goal && newPool >= goal;
+	for (const auto &[pid, onlinePlayer] : g_game().getPlayers()) {
+		if (!onlinePlayer) {
+			continue;
+		}
+		onlinePlayer->sendCyclopediaMapDonations(goal, entries);
+		if (crossed) {
+			onlinePlayer->sendTextMessage(MESSAGE_EVENT_ADVANCE, fmt::format("Donations for the area reached their goal - improved respawn rate will activate at the next server save and last one day!"));
+		}
+	}
+	player->sendTextMessage(MESSAGE_EVENT_ADVANCE, fmt::format("You donated {} gold (area pool: {}/{}).", amount, newPool, goal));
 }
 
 void ProtocolGame::sendCyclopediaCharacterNoData(CyclopediaCharacterInfoType_t characterInfoType, uint8_t errorCode) {

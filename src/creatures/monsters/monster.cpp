@@ -380,7 +380,12 @@ void Monster::onRemoveCreature(const std::shared_ptr<Creature> &creature, bool i
 
 	if (creature.get() == this) {
 		if (spawnMonster) {
-			spawnMonster->startSpawnMonsterCheck();
+			// remove OUR block explicitly (matched by pointer): the isRemoved() flag is
+			// not set yet inside this callback, so cleanup() alone would skip this corpse
+			// until the next timer tick (AoE double-kills lost up to a full interval)
+			const auto spawn = spawnMonster;
+			spawn->removeMonster(static_self_cast<Monster>());
+			spawn->startSpawnMonsterCheck();
 		}
 
 		setIdle(true);
