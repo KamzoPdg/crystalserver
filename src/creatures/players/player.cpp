@@ -12996,7 +12996,7 @@ void Player::sendCyclopediaDiscoveryTest(uint16_t mainAreaId, uint16_t subAreaId
 	if (!client) {
 		return;
 	}
-	
+
 	client->sendCyclopediaMapDiscoveryData({ std::make_tuple(mainAreaId, static_cast<uint8_t>(1), static_cast<uint8_t>(14)) }, {}, { subAreaId });
 	client->sendCyclopediaMapSetCurrentArea(subAreaId);
 	static const int offsets[7][2] = { { 0, 0 }, { 2, 0 }, { -2, 0 }, { 0, 2 }, { 0, -2 }, { 3, 3 }, { -3, -3 } };
