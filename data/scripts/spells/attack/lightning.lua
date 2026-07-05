@@ -5,7 +5,6 @@ combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, CONST_ANI_ENERGY)
 -- Vocation Adjustment: chains to 2 additional targets (3 total).
 combat:setParameter(COMBAT_PARAM_CHAIN_EFFECT, CONST_ME_PINK_ENERGY_SPARK)
 
-
 -- Phase III LIVE rebalance: base 70 -> 110.
 local DAMAGE_SCALE = 110 / 70
 

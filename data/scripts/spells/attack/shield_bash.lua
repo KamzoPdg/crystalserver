@@ -7,7 +7,6 @@
 -- Implemented in crosshair/target mode (needTarget + range 1): the server resolves
 -- the engaged target, matching how other knight melee spells (Brutal Strike) work.
 
-
 local DEBUFF_DURATION = 10000 -- 10s
 local DEBUFF_DAMAGEDEALT = 50 -- target deals 50% damage (= -50%) while debuffed
 

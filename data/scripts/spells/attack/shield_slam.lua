@@ -8,7 +8,6 @@
 -- Self-targeted area spell (like Berserk / Groundshaker): it strikes everything
 -- around the caster, so no client target position is needed.
 
-
 local DEBUFF_DURATION = 10000 -- 10s
 local DEBUFF_DAMAGEDEALT = 50 -- enemy deals 50% damage (= -50%) while debuffed
 
