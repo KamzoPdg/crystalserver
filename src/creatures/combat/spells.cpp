@@ -756,7 +756,7 @@ int32_t Spell::calculateAugmentSpellCooldownReduction(const std::shared_ptr<Play
 	for (const auto &playerProficiencyAugment : player->getEquippedWeaponProficiency().spellAugments) {
 		if (playerProficiencyAugment.spellId == getSpellId()) {
 			if (playerProficiencyAugment.augmentType == PROFICIENCY_AUGMENTTYPE_COOLDOWN) {
-				const int32_t augmentValue = playerProficiencyAugment.value * 1;
+				const int32_t augmentValue = static_cast<int32_t>(playerProficiencyAugment.value * -1000.0f);
 				spellCooldown += augmentValue;
 			}
 		}
