@@ -213,6 +213,10 @@ public:
 
 	static bool isInPvpZone(const std::shared_ptr<Creature> &attacker, const std::shared_ptr<Creature> &target);
 	static bool isProtected(const std::shared_ptr<Player> &attacker, const std::shared_ptr<Player> &target);
+	// Open PvP expert modes (dove / white hand / yellow hand / red fist): who may attack whom.
+	static ReturnValue checkExpertPvpMode(const std::shared_ptr<Player> &attacker, const std::shared_ptr<Player> &target);
+	static bool isOwnedFieldBystander(const std::shared_ptr<Player> &player, const std::shared_ptr<Item> &field);
+	static bool isPveWall(const std::shared_ptr<Item> &item);
 	static bool isPlayerCombat(const std::shared_ptr<Creature> &target);
 	static CombatType_t ConditionToDamageType(ConditionType_t type);
 	static ConditionType_t DamageToConditionType(CombatType_t type);
