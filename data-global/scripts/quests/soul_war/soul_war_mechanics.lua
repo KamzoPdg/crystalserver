@@ -315,7 +315,7 @@ function changeMap.onSay(player, words, param)
 	elseif param == "inundate" then
 		Game.loadMap(SoulWarQuest.ebbAndFlow.mapsPath.inundate)
 	elseif param == "ebb" then
-		Game.loadMap(SoulWarQuest.ebbAndFlowmapsPath.ebbFlow)
+		Game.loadMap(SoulWarQuest.ebbAndFlow.mapsPath.ebbFlow)
 	end
 end
 
